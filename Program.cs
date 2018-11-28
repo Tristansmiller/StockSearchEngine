@@ -11,9 +11,62 @@ namespace StockDataHarvester
 {
     partial class Program
     {
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
-            MainFunc().GetAwaiter().GetResult();
+            HttpClient httpClient = new HttpClient();
+            string APIKey = "OjE0NjhjNjRhNWE1ZWE2YmQ4MThjNDM3MzVkY2IxNWM3";
+            string APIPath = "https://api.intrinio.com/companies";
+            List<StockInfo> stockInfoList = new List<StockInfo>();
+            stockInfoList = initializeStockInfo();
+            while (true)
+            {
+                Console.WriteLine();
+                Console.Write("Input a ticker to find similar stocks: ");
+                string ticker = Console.ReadLine();
+                HttpResponseMessage response = await httpClient.GetAsync(APIPath + "?identifier=" + ticker + "&api_key=" + APIKey);
+                string APIResponse = "";
+                if (response.IsSuccessStatusCode)
+                {
+                    APIResponse = await response.Content.ReadAsStringAsync();
+                    StockInfo queryStock = JsonConvert.DeserializeObject<StockInfo>(APIResponse);
+                    if (queryStock.shortDescription != null)
+                    {
+                        queryStock.shortDescription = queryStock.shortDescription.Replace(',', ' ');
+                        queryStock.shortDescription = queryStock.shortDescription.Replace(':', ' ');
+                        queryStock.shortDescription = queryStock.shortDescription.Replace('.', ' ');
+                    }
+                    if (queryStock.longDescription != null)
+                    {
+                        queryStock.longDescription = queryStock.longDescription.Replace(',', ' ');
+                    }
+                    if (queryStock.ticker != null)
+                    {
+                        queryStock.ticker = queryStock.ticker.Replace(',', ' ');
+                    }
+                    if (queryStock.name != null)
+                    {
+                        queryStock.name = queryStock.name.Replace(',', ' ');
+                    }
+                    if (queryStock.legalName != null)
+                    {
+                        queryStock.legalName = queryStock.legalName.Replace(',', ' ');
+                    }
+                    if (queryStock.stockExchange != null)
+                    {
+                        queryStock.stockExchange = queryStock.stockExchange.Replace(',', ' ');
+                    }
+                    Console.WriteLine("Finding Results similar to...");
+                    Console.WriteLine("STOCK NAME: " + queryStock.name);
+                    Console.WriteLine("LEGAL NAME: " + queryStock.legalName);
+                    Console.WriteLine("STOCK EXCHANGE: " + queryStock.stockExchange);
+                    Console.WriteLine("DESCRIPTION: " + queryStock.shortDescription);
+                    outputResults(rankStocksForSimilarity(queryStock, stockInfoList));
+                }
+                else
+                {
+                    Console.WriteLine("Couldn't find any stocks that matched that ticker.");
+                }
+            }
             Console.WriteLine("Done");
         }
         static List<StockInfo> initializeStockInfo()
@@ -233,62 +286,5 @@ namespace StockDataHarvester
         //    };
         //    sw.Close();
         //}
-        static async Task MainFunc()
-        {
-            HttpClient httpClient = new HttpClient();
-            string APIKey = "OjE0NjhjNjRhNWE1ZWE2YmQ4MThjNDM3MzVkY2IxNWM3";
-            string APIPath = "https://api.intrinio.com/companies";
-            List<StockInfo> stockInfoList = new List<StockInfo>();
-            stockInfoList = initializeStockInfo();
-            while (true)
-            {
-                Console.WriteLine();
-                Console.Write("Input a ticker to find similar stocks: ");
-                string ticker = Console.ReadLine();
-                HttpResponseMessage response = await httpClient.GetAsync(APIPath + "?identifier=" + ticker + "&api_key=" + APIKey);
-                string APIResponse = "";
-                if (response.IsSuccessStatusCode)
-                {
-                    APIResponse = await response.Content.ReadAsStringAsync();
-                    StockInfo queryStock = JsonConvert.DeserializeObject<StockInfo>(APIResponse);
-                    if (queryStock.shortDescription != null)
-                    {
-                        queryStock.shortDescription = queryStock.shortDescription.Replace(',', ' ');
-                        queryStock.shortDescription = queryStock.shortDescription.Replace(':', ' ');
-                        queryStock.shortDescription = queryStock.shortDescription.Replace('.', ' ');
-                    }
-                    if (queryStock.longDescription != null)
-                    {
-                        queryStock.longDescription = queryStock.longDescription.Replace(',', ' ');
-                    }
-                    if (queryStock.ticker != null)
-                    {
-                        queryStock.ticker = queryStock.ticker.Replace(',', ' ');
-                    }
-                    if (queryStock.name != null)
-                    {
-                        queryStock.name = queryStock.name.Replace(',', ' ');
-                    }
-                    if (queryStock.legalName != null)
-                    {
-                        queryStock.legalName = queryStock.legalName.Replace(',', ' ');
-                    }
-                    if (queryStock.stockExchange != null)
-                    {
-                        queryStock.stockExchange = queryStock.stockExchange.Replace(',', ' ');
-                    }
-                    Console.WriteLine("Finding Results similar to...");
-                    Console.WriteLine("STOCK NAME: " + queryStock.name);
-                    Console.WriteLine("LEGAL NAME: " + queryStock.legalName);
-                    Console.WriteLine("STOCK EXCHANGE: " + queryStock.stockExchange);
-                    Console.WriteLine("DESCRIPTION: " + queryStock.shortDescription);
-                    outputResults(rankStocksForSimilarity(queryStock, stockInfoList));
-                }
-                else
-                {
-                    Console.WriteLine("Couldn't find any stocks that matched that ticker.");
-                }
-            }
-        }
     }
 }
