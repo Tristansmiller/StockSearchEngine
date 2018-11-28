@@ -193,14 +193,23 @@ namespace StockDataHarvester
         }
         static double calculateDocumentSimilarity(Query query, StockInfo stock, int numDocuments, List<StockInfo> documents)
         {
-            ConcurrentBag<double> TF_IDFWeightProducts = new ConcurrentBag<double>();
+            ConcurrentBag<(double,double)> TF_IDFWeightProducts = new ConcurrentBag<(double,double)>();
+            double magnitude = 0;
             Parallel.ForEach(query.terms, term =>
             {
               //  Console.WriteLine(term.term);
                 double documenttfidf = calculateTF_IDFWeight(term.term, stock, term.documentFrequency, numDocuments);
-                TF_IDFWeightProducts.Add(documenttfidf * term.TF_IDFWeight);
+                magnitude += documenttfidf * documenttfidf;
+                TF_IDFWeightProducts.Add((documenttfidf, term.TF_IDFWeight));
             });
-            return TF_IDFWeightProducts.Sum();
+            magnitude = Math.Sqrt(magnitude);
+            double sum = 0;
+            IEnumerator<(double, double)> enumerator = TF_IDFWeightProducts.GetEnumerator();
+            while (enumerator.MoveNext())
+            {
+                sum += ((enumerator.Current.Item1 / magnitude) * enumerator.Current.Item2);
+            }
+            return sum;
         }
         static List<(StockInfo,double)> rankStocksForSimilarity(StockInfo queryStock, List<StockInfo> stocks)
         {
