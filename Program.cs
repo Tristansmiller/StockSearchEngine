@@ -47,7 +47,7 @@ namespace StockDataHarvester
         }
         static List<StockInfo> initializeStockInfo()
         {
-            List<string> stringStocks = new List<string>(File.ReadAllLines(@"C:\Users\Trist\Documents\StockInfo.csv"));
+            List<string> stringStocks = new List<string>(File.ReadAllLines(@".\StockInfo.csv"));
             ConcurrentBag<StockInfo> stockInfoBag = new ConcurrentBag<StockInfo>();
             Parallel.ForEach(stringStocks, stringStock =>
              {
