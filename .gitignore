@@ -1,4 +1,5 @@
-/bin/
-/obj/
-/Properties/
-/.vscode/
+**/bin/
+**/obj/
+**/Properties/
+**/.vscode/
+**/.vs/
