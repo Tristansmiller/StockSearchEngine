@@ -69,6 +69,7 @@ namespace StockDataHarvester
             }
             Console.WriteLine("Done");
         }
+
         static List<StockInfo> initializeStockInfo()
         {
             List<string> stringStocks = new List<string>(File.ReadAllLines(@".\StockInfo.csv"));
@@ -97,6 +98,7 @@ namespace StockDataHarvester
              });
             return stockInfoBag.ToList();
         }
+
         static int calculateDocumentFrequency(string term, List<StockInfo> documents)
         {
             // ConcurrentBag<int> occurrenceCounter = new ConcurrentBag<int>();
@@ -131,6 +133,7 @@ namespace StockDataHarvester
             return documentCounter.Sum();
             //  return true;
         }
+
         static int calculateTermFrequency(string term, StockInfo document)
         {
             ConcurrentBag<string> stockDescriptionTokens = new ConcurrentBag<string>(document.shortDescription.Split(' '));
@@ -173,6 +176,7 @@ namespace StockDataHarvester
                 throw e;
             }
         }
+
         static Query initializeQueryVector(StockInfo stock, List<StockInfo> documents)
         {
             Query query = new Query();
@@ -222,9 +226,10 @@ namespace StockDataHarvester
             });
             return query;
         }
+
         static double calculateDocumentSimilarity(Query query, StockInfo stock, int numDocuments, List<StockInfo> documents)
         {
-            ConcurrentBag<(double,double)> TF_IDFWeightProducts = new ConcurrentBag<(double,double)>();
+            ConcurrentBag<(double, double)> TF_IDFWeightProducts = new ConcurrentBag<(double, double)>();
             double magnitude = 0;
             Parallel.ForEach(query.terms, term =>
             {
@@ -242,6 +247,7 @@ namespace StockDataHarvester
             }
             return sum;
         }
+
         static List<(StockInfo, double)> rankStocksForSimilarity(StockInfo queryStock, List<StockInfo> stocks)
         {
             Console.WriteLine("Initializing Query Vector.");
@@ -257,6 +263,7 @@ namespace StockDataHarvester
             ascRankedStocks = ascRankedStocks.OrderBy(obj => obj.Item2).Reverse().ToList();
             return ascRankedStocks;
         }
+
         static void outputResults(List<(StockInfo, double)> rankedStocks)
         {
             Console.WriteLine("Results:");
