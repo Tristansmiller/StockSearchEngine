@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 
@@ -166,7 +165,7 @@ namespace StockDataHarvester
                     {
                         currTerm.documentFrequency = calculateDocumentFrequency(token, documents);
                     }
-                    catch (Exception e)
+                    catch (Exception)
                     {
                         Console.WriteLine(token);
                         Console.WriteLine("Failed to calculate Document Frequency");
@@ -175,7 +174,7 @@ namespace StockDataHarvester
                     {
                         currTerm.TF_IDFWeight = calculateTF_IDFWeight(token, stock, currTerm.documentFrequency, numDocuments);
                     }
-                    catch (Exception e)
+                    catch (Exception)
                     {
                         Console.WriteLine(token);
                         Console.WriteLine(currTerm.documentFrequency);
