@@ -4,42 +4,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 
 namespace StockDataHarvester
 {
-    class Program
+    partial class Program
     {
-        class StockInfo
-        {
-            [JsonProperty("ticker")]
-            public string ticker { get; set; }
-            [JsonProperty("short_description")]
-            public string shortDescription { get; set; }
-            [JsonProperty("long_description")]
-            public string longDescription { get; set; }
-            [JsonProperty("name")]
-            public string name { get; set; }
-            [JsonProperty("sic")]
-            public string sic { get; set; }
-            [JsonProperty("legal_name")]
-            public string legalName { get; set; }
-            [JsonProperty("stock_exchange")]
-            public string stockExchange { get; set; }
-        }
-
-        class Query
-        {
-            public ConcurrentBag<Term> terms { get; set; }
-        }
-        class Term
-        {
-            public string term { get; set; }
-            public double TF_IDFWeight { get; set; }
-            public int documentFrequency { get; set; }
-        }
         static void Main(string[] args)
         {
             MainFunc().GetAwaiter().GetResult();
@@ -64,7 +35,8 @@ namespace StockDataHarvester
                      stock.shortDescription = stock.shortDescription.Replace(',', ' ');
                      stock.longDescription = splitString[6];
                      stockInfoBag.Add(stock);
-                 } catch(Exception e)
+                 }
+                 catch (Exception e)
                  {
                      Console.WriteLine(e);
                  }
@@ -74,12 +46,12 @@ namespace StockDataHarvester
         }
         static int calculateDocumentFrequency(string term, List<StockInfo> documents)
         {
-           // ConcurrentBag<int> occurrenceCounter = new ConcurrentBag<int>();
+            // ConcurrentBag<int> occurrenceCounter = new ConcurrentBag<int>();
             ConcurrentBag<int> documentCounter = new ConcurrentBag<int>();
             Parallel.ForEach(documents, stock =>
             {
                 string[] stockDescriptionTokens = stock.shortDescription.Split(' ');
-                for(int i = 0; i < stockDescriptionTokens.Length; i++)
+                for (int i = 0; i < stockDescriptionTokens.Length; i++)
                 {
                     if (stockDescriptionTokens[i] == term)
                     {
@@ -88,25 +60,26 @@ namespace StockDataHarvester
                     }
                 }
                 //int counter = 0;
-             //   List<string> stockDescriptionTokens = new List<string>(stock.shortDescription.Split(' '));
-             //   stockDescriptionTokens.ForEach(token =>
-             //   {
-             //       if(token == term)
-             //       {
-             //           //counter++;
-             //       }
-             //   });
-             //  // occurrenceCounter.Add(counter);
-             // //  if (counter != 0)
-             // //  {
-             //       documentCounter.Add(1);
-             ////   }
+                //   List<string> stockDescriptionTokens = new List<string>(stock.shortDescription.Split(' '));
+                //   stockDescriptionTokens.ForEach(token =>
+                //   {
+                //       if(token == term)
+                //       {
+                //           //counter++;
+                //       }
+                //   });
+                //  // occurrenceCounter.Add(counter);
+                // //  if (counter != 0)
+                // //  {
+                //       documentCounter.Add(1);
+                ////   }
             });
-         //   collectionFrequency = occurrenceCounter.Sum();
+            //   collectionFrequency = occurrenceCounter.Sum();
             return documentCounter.Sum();
-          //  return true;
+            //  return true;
         }
-        static int calculateTermFrequency(string term, StockInfo document) {
+        static int calculateTermFrequency(string term, StockInfo document)
+        {
             ConcurrentBag<string> stockDescriptionTokens = new ConcurrentBag<string>(document.shortDescription.Split(' '));
             ConcurrentBag<int> counter = new ConcurrentBag<int>();
             Parallel.ForEach(stockDescriptionTokens, token =>
@@ -124,22 +97,24 @@ namespace StockDataHarvester
             double termFreq = 0;
             try
             {
-               termFreq = calculateTermFrequency(term, stock);
-                if (termFreq != 0 && documentFrequency!=0)
+                termFreq = calculateTermFrequency(term, stock);
+                if (termFreq != 0 && documentFrequency != 0)
                 {
-                  return (1 + Math.Log10(termFreq))*Math.Log10(numDocuments / documentFrequency);
-                }else
+                    return (1 + Math.Log10(termFreq)) * Math.Log10(numDocuments / documentFrequency);
+                }
+                else
                 {
                     return 0;
                 }
-                
-            } catch(Exception e)
+
+            }
+            catch (Exception e)
             {
                 Console.WriteLine("TERM FREQ: " + termFreq);
                 Console.WriteLine("DOC FREQ: " + documentFrequency);
-                Console.WriteLine("STOCK NAME: "+stock.name);
-                Console.WriteLine("STOCK DESC: "+stock.shortDescription);
-                Console.WriteLine("TERM: "+term);
+                Console.WriteLine("STOCK NAME: " + stock.name);
+                Console.WriteLine("STOCK DESC: " + stock.shortDescription);
+                Console.WriteLine("TERM: " + term);
                 Console.WriteLine();
                 Console.WriteLine(e);
                 throw e;
@@ -153,15 +128,16 @@ namespace StockDataHarvester
             int numDocuments = documents.Count();
             Parallel.ForEach(queryTokens, token =>
             {
-                if (token != "" && token!="or" && token!="and" && token!="the" && token!="is" && token!="a" && token!="that" && token!="this" && token!="for")
+                if (token != "" && token != "or" && token != "and" && token != "the" && token != "is" && token != "a" && token != "that" && token != "this" && token != "for")
                 {
-                   // Console.WriteLine("Creating a term object for token: " + token);
+                    // Console.WriteLine("Creating a term object for token: " + token);
                     Term currTerm = new Term();
                     currTerm.term = token;
                     try
                     {
                         currTerm.documentFrequency = calculateDocumentFrequency(token, documents);
-                    } catch(Exception e)
+                    }
+                    catch (Exception)
                     {
                         Console.WriteLine(token);
                         Console.WriteLine("Failed to calculate Document Frequency");
@@ -169,7 +145,8 @@ namespace StockDataHarvester
                     try
                     {
                         currTerm.TF_IDFWeight = calculateTF_IDFWeight(token, stock, currTerm.documentFrequency, numDocuments);
-                    } catch(Exception e)
+                    }
+                    catch (Exception)
                     {
                         Console.WriteLine(token);
                         Console.WriteLine(currTerm.documentFrequency);
@@ -178,7 +155,8 @@ namespace StockDataHarvester
                     try
                     {
                         query.terms.Add(currTerm);
-                    } catch(Exception e)
+                    }
+                    catch (Exception e)
                     {
                         Console.WriteLine(token);
                         Console.WriteLine(currTerm.documentFrequency);
@@ -186,7 +164,7 @@ namespace StockDataHarvester
                         Console.WriteLine("Failed to add to bag.");
                         Console.WriteLine(e);
                     }
-                    
+
                 }
             });
             return query;
@@ -197,7 +175,7 @@ namespace StockDataHarvester
             double magnitude = 0;
             Parallel.ForEach(query.terms, term =>
             {
-              //  Console.WriteLine(term.term);
+                //  Console.WriteLine(term.term);
                 double documenttfidf = calculateTF_IDFWeight(term.term, stock, term.documentFrequency, numDocuments);
                 magnitude += documenttfidf * documenttfidf;
                 TF_IDFWeightProducts.Add((documenttfidf, term.TF_IDFWeight));
@@ -211,7 +189,7 @@ namespace StockDataHarvester
             }
             return sum;
         }
-        static List<(StockInfo,double)> rankStocksForSimilarity(StockInfo queryStock, List<StockInfo> stocks)
+        static List<(StockInfo, double)> rankStocksForSimilarity(StockInfo queryStock, List<StockInfo> stocks)
         {
             Console.WriteLine("Initializing Query Vector.");
             Query query = initializeQueryVector(queryStock, stocks);
@@ -226,13 +204,13 @@ namespace StockDataHarvester
             ascRankedStocks = ascRankedStocks.OrderBy(obj => obj.Item2).Reverse().ToList();
             return ascRankedStocks;
         }
-        static void outputResults(List<(StockInfo,double)> rankedStocks)
+        static void outputResults(List<(StockInfo, double)> rankedStocks)
         {
             Console.WriteLine("Results:");
-           for(int i = 0; i < 20; i++)
+            for (int i = 0; i < 20; i++)
             {
                 Console.WriteLine(i + ": " + rankedStocks[i].Item1.ticker + " " + rankedStocks[i].Item1.name + " " + rankedStocks[i].Item1.shortDescription);
-                Console.WriteLine("SCORE: "+rankedStocks[i].Item2);
+                Console.WriteLine("SCORE: " + rankedStocks[i].Item2);
                 Console.WriteLine();
             }
         }
@@ -312,6 +290,5 @@ namespace StockDataHarvester
                 }
             }
         }
-
     }
 }
