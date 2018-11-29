@@ -1,6 +1,6 @@
 using Newtonsoft.Json;
 
-namespace StockDataHarvester
+namespace StockSearchEngine
 {
     class StockInfo
     {

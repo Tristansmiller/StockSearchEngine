@@ -1,4 +1,4 @@
-namespace StockDataHarvester
+namespace StockSearchEngine
 {
     class Term
     {
