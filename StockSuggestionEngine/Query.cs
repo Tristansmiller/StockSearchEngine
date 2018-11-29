@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
 
-namespace StockDataHarvester
+namespace StockSearchEngine
 {
     class Query
     {

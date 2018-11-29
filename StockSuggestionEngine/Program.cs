@@ -7,7 +7,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 
-namespace StockDataHarvester
+namespace StockSearchEngine
 {
     partial class Program
     {
@@ -81,7 +81,7 @@ namespace StockDataHarvester
 
         static List<StockInfo> initializeStockInfo()
         {
-            List<string> stringStocks = new List<string>(File.ReadAllLines(@".\StockInfo.csv"));
+            List<string> stringStocks = new List<string>(File.ReadAllLines("../InfoDownloader/Results_Cleaned.csv"));
             ConcurrentBag<StockInfo> stockInfoBag = new ConcurrentBag<StockInfo>();
             Parallel.ForEach(stringStocks, stringStock =>
              {
@@ -288,7 +288,7 @@ namespace StockDataHarvester
                 //Console.WriteLine("Ranking stock ticker: " + stock.ticker);
             });
             List<(StockInfo, double)> ascRankedStocks = rankedStocks.ToList();
-            ascRankedStocks = ascRankedStocks.OrderBy(obj => obj.Item2).Reverse().ToList();
+            ascRankedStocks = ascRankedStocks.OrderBy(obj => obj.Item2).ToList();
             return ascRankedStocks;
         }
 
