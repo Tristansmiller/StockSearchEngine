@@ -78,6 +78,7 @@ namespace StockDataHarvester
             }
             Console.WriteLine("Done");
         }
+
         static List<StockInfo> initializeStockInfo()
         {
             List<string> stringStocks = new List<string>(File.ReadAllLines(@".\StockInfo.csv"));
@@ -255,7 +256,7 @@ namespace StockDataHarvester
         }
         static double calculateDocumentSimilarity(Query query, StockInfo stock, int numDocuments, List<StockInfo> documents,bool useLongDesc)
         {
-            ConcurrentBag<(double,double)> TF_IDFWeightProducts = new ConcurrentBag<(double,double)>();
+            ConcurrentBag<(double, double)> TF_IDFWeightProducts = new ConcurrentBag<(double, double)>();
             double magnitude = 0;
             Parallel.ForEach(query.terms, term =>
             {
@@ -290,6 +291,7 @@ namespace StockDataHarvester
             ascRankedStocks = ascRankedStocks.OrderBy(obj => obj.Item2).Reverse().ToList();
             return ascRankedStocks;
         }
+
         static void outputResults(List<(StockInfo, double)> rankedStocks)
         {
             Console.WriteLine("Results:");
