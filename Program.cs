@@ -17,6 +17,12 @@ namespace StockDataHarvester
             string APIKey = "OjE0NjhjNjRhNWE1ZWE2YmQ4MThjNDM3MzVkY2IxNWM3";
             string APIPath = "https://api.intrinio.com/companies";
             List<StockInfo> stockInfoList = new List<StockInfo>();
+            bool useLongDesc = false;
+            if(args.Length>0){
+                if(args[0]=="long"){
+                    useLongDesc = true;
+                }
+            }
             stockInfoList = initializeStockInfo();
             while (true)
             {
@@ -38,6 +44,8 @@ namespace StockDataHarvester
                     if (queryStock.longDescription != null)
                     {
                         queryStock.longDescription = queryStock.longDescription.Replace(',', ' ');
+                        queryStock.shortDescription = queryStock.shortDescription.Replace(':', ' ');
+                        queryStock.shortDescription = queryStock.shortDescription.Replace('.', ' ');
                     }
                     if (queryStock.ticker != null)
                     {
@@ -60,10 +68,11 @@ namespace StockDataHarvester
                     Console.WriteLine("LEGAL NAME: " + queryStock.legalName);
                     Console.WriteLine("STOCK EXCHANGE: " + queryStock.stockExchange);
                     Console.WriteLine("DESCRIPTION: " + queryStock.shortDescription);
-                    outputResults(rankStocksForSimilarity(queryStock, stockInfoList));
+                    outputResults(rankStocksForSimilarity(queryStock, stockInfoList,useLongDesc));
                 }
                 else
                 {
+                   // Console.WriteLine(response.)
                     Console.WriteLine("Couldn't find any stocks that matched that ticker.");
                 }
             }
@@ -86,7 +95,12 @@ namespace StockDataHarvester
                      stock.stockExchange = splitString[4];
                      stock.shortDescription = splitString[5];
                      stock.shortDescription = stock.shortDescription.Replace(',', ' ');
+                     stock.shortDescription = stock.shortDescription.Replace(':',' ');
+                     stock.shortDescription = stock.shortDescription.Replace('.',' ');
                      stock.longDescription = splitString[6];
+                     stock.longDescription = stock.longDescription.Replace(',',' ');
+                     stock.longDescription = stock.longDescription.Replace(':',' ');
+                     stock.longDescription = stock.longDescription.Replace('.',' ');
                      stockInfoBag.Add(stock);
                  }
                  catch (Exception e)
@@ -97,13 +111,18 @@ namespace StockDataHarvester
              });
             return stockInfoBag.ToList();
         }
-        static int calculateDocumentFrequency(string term, List<StockInfo> documents)
+        static int calculateDocumentFrequency(string term, List<StockInfo> documents, bool useLongDesc)
         {
             // ConcurrentBag<int> occurrenceCounter = new ConcurrentBag<int>();
             ConcurrentBag<int> documentCounter = new ConcurrentBag<int>();
             Parallel.ForEach(documents, stock =>
             {
-                string[] stockDescriptionTokens = stock.shortDescription.Split(' ');
+                string[] stockDescriptionTokens = null;
+                if(useLongDesc){
+                    stockDescriptionTokens = stock.longDescription.Split(' ');
+                } else {
+                    stockDescriptionTokens = stock.shortDescription.Split(' ');
+                }
                 for (int i = 0; i < stockDescriptionTokens.Length; i++)
                 {
                     if (stockDescriptionTokens[i] == term)
@@ -131,9 +150,14 @@ namespace StockDataHarvester
             return documentCounter.Sum();
             //  return true;
         }
-        static int calculateTermFrequency(string term, StockInfo document)
+        static int calculateTermFrequency(string term, StockInfo document, bool useLongDesc)
         {
-            ConcurrentBag<string> stockDescriptionTokens = new ConcurrentBag<string>(document.shortDescription.Split(' '));
+            ConcurrentBag<string> stockDescriptionTokens = null;
+            if(useLongDesc){
+                stockDescriptionTokens = new ConcurrentBag<string>(document.longDescription.Split(' '));
+            } else {
+                stockDescriptionTokens = new ConcurrentBag<string>(document.shortDescription.Split(' '));
+            }
             ConcurrentBag<int> counter = new ConcurrentBag<int>();
             Parallel.ForEach(stockDescriptionTokens, token =>
             {
@@ -145,12 +169,12 @@ namespace StockDataHarvester
             return counter.Sum();
         }
 
-        static double calculateTF_IDFWeight(string term, StockInfo stock, int documentFrequency, int numDocuments)
+        static double calculateTF_IDFWeight(string term, StockInfo stock, int documentFrequency, int numDocuments,bool useLongDesc)
         {
             double termFreq = 0;
             try
             {
-                termFreq = calculateTermFrequency(term, stock);
+                termFreq = calculateTermFrequency(term, stock, useLongDesc);
                 if (termFreq != 0 && documentFrequency != 0)
                 {
                     return (1 + Math.Log10(termFreq)) * Math.Log10(numDocuments / documentFrequency);
@@ -173,11 +197,18 @@ namespace StockDataHarvester
                 throw e;
             }
         }
-        static Query initializeQueryVector(StockInfo stock, List<StockInfo> documents)
+        static Query initializeQueryVector(StockInfo stock, List<StockInfo> documents, bool useLongDesc)
         {
             Query query = new Query();
+            query.ticker = stock.ticker;
             query.terms = new ConcurrentBag<Term>();
-            List<string> queryTokens = new List<string>(stock.shortDescription.Split(' '));
+            List<string> queryTokens = null;
+            if(useLongDesc){
+                queryTokens = new List<string>(stock.longDescription.Split(' '));
+            } else {
+                queryTokens = new List<string>(stock.shortDescription.Split(' '));
+            }
+            //List<string> queryTokens = new List<string>(stock.longDescription.Split(' '));
             int numDocuments = documents.Count();
             Parallel.ForEach(queryTokens, token =>
             {
@@ -188,7 +219,7 @@ namespace StockDataHarvester
                     currTerm.term = token;
                     try
                     {
-                        currTerm.documentFrequency = calculateDocumentFrequency(token, documents);
+                        currTerm.documentFrequency = calculateDocumentFrequency(token, documents, useLongDesc);
                     }
                     catch (Exception)
                     {
@@ -197,7 +228,7 @@ namespace StockDataHarvester
                     }
                     try
                     {
-                        currTerm.TF_IDFWeight = calculateTF_IDFWeight(token, stock, currTerm.documentFrequency, numDocuments);
+                        currTerm.TF_IDFWeight = calculateTF_IDFWeight(token, stock, currTerm.documentFrequency, numDocuments, useLongDesc);
                     }
                     catch (Exception)
                     {
@@ -222,14 +253,14 @@ namespace StockDataHarvester
             });
             return query;
         }
-        static double calculateDocumentSimilarity(Query query, StockInfo stock, int numDocuments, List<StockInfo> documents)
+        static double calculateDocumentSimilarity(Query query, StockInfo stock, int numDocuments, List<StockInfo> documents,bool useLongDesc)
         {
             ConcurrentBag<(double,double)> TF_IDFWeightProducts = new ConcurrentBag<(double,double)>();
             double magnitude = 0;
             Parallel.ForEach(query.terms, term =>
             {
                 //  Console.WriteLine(term.term);
-                double documenttfidf = calculateTF_IDFWeight(term.term, stock, term.documentFrequency, numDocuments);
+                double documenttfidf = calculateTF_IDFWeight(term.term, stock, term.documentFrequency, numDocuments, useLongDesc);
                 magnitude += documenttfidf * documenttfidf;
                 TF_IDFWeightProducts.Add((documenttfidf, term.TF_IDFWeight));
             });
@@ -242,16 +273,18 @@ namespace StockDataHarvester
             }
             return sum;
         }
-        static List<(StockInfo, double)> rankStocksForSimilarity(StockInfo queryStock, List<StockInfo> stocks)
+        static List<(StockInfo, double)> rankStocksForSimilarity(StockInfo queryStock, List<StockInfo> stocks, bool useLongDesc)
         {
             Console.WriteLine("Initializing Query Vector.");
-            Query query = initializeQueryVector(queryStock, stocks);
+            Query query = initializeQueryVector(queryStock, stocks, useLongDesc);
             int numDocuments = stocks.Count();
             ConcurrentBag<(StockInfo, double)> rankedStocks = new ConcurrentBag<(StockInfo, double)>();
             Parallel.ForEach(stocks, stock =>
             {
+                if(stock.ticker!=query.ticker){
+                  rankedStocks.Add((stock, calculateDocumentSimilarity(query, stock, numDocuments, stocks, useLongDesc))); 
+                }
                 //Console.WriteLine("Ranking stock ticker: " + stock.ticker);
-                rankedStocks.Add((stock, calculateDocumentSimilarity(query, stock, numDocuments, stocks)));
             });
             List<(StockInfo, double)> ascRankedStocks = rankedStocks.ToList();
             ascRankedStocks = ascRankedStocks.OrderBy(obj => obj.Item2).Reverse().ToList();
