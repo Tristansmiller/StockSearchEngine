@@ -68,7 +68,9 @@ namespace StockSearchEngine
                     Console.WriteLine("LEGAL NAME: " + queryStock.legalName);
                     Console.WriteLine("STOCK EXCHANGE: " + queryStock.stockExchange);
                     Console.WriteLine("DESCRIPTION: " + queryStock.shortDescription);
+                    Console.WriteLine(DateTime.Now);
                     outputResults(rankStocksForSimilarity(queryStock, stockInfoList,useLongDesc));
+                    Console.WriteLine(DateTime.Now);
                 }
                 else
                 {
@@ -81,7 +83,7 @@ namespace StockSearchEngine
 
         static List<StockInfo> initializeStockInfo()
         {
-            List<string> stringStocks = new List<string>(File.ReadAllLines("../InfoDownloader/Results_Cleaned.csv"));
+            List<string> stringStocks = new List<string>(File.ReadAllLines("./Results_Cleaned.csv"));
             ConcurrentBag<StockInfo> stockInfoBag = new ConcurrentBag<StockInfo>();
             Parallel.ForEach(stringStocks, stringStock =>
              {
@@ -126,7 +128,7 @@ namespace StockSearchEngine
                 }
                 for (int i = 0; i < stockDescriptionTokens.Length; i++)
                 {
-                    if (stockDescriptionTokens[i] == term)
+                    if (stockDescriptionTokens[i].ToLower() == term.ToLower())
                     {
                         documentCounter.Add(1);
                         break;
@@ -162,7 +164,7 @@ namespace StockSearchEngine
             ConcurrentBag<int> counter = new ConcurrentBag<int>();
             Parallel.ForEach(stockDescriptionTokens, token =>
             {
-                if (token == term)
+                if (token.ToLower() == term.ToLower())
                 {
                     counter.Add(1);
                 }
@@ -288,7 +290,7 @@ namespace StockSearchEngine
                 //Console.WriteLine("Ranking stock ticker: " + stock.ticker);
             });
             List<(StockInfo, double)> ascRankedStocks = rankedStocks.ToList();
-            ascRankedStocks = ascRankedStocks.OrderBy(obj => obj.Item2).ToList();
+            ascRankedStocks = ascRankedStocks.OrderBy(obj => obj.Item2).Reverse().ToList();
             return ascRankedStocks;
         }
 
